@@ -66,7 +66,7 @@ def plot_replicate_variance(raw_path, output_path=None):
         by_key.setdefault((r["replicate_id"], r["condition"]), []).append(r)
 
     replicate_ids = sorted({r["replicate_id"] for r in results})
-    condition_names = [name for name, _ in config.CONDITIONS]
+    condition_names = [name for name, _, _ in config.CONDITIONS]
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
     for i, condition in enumerate(condition_names):

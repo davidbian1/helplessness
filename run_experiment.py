@@ -79,9 +79,9 @@ def run_replicate(client, problem_seed, attempt_seed, shuffle_seed,
     attempts = generate_attempts(conditioning_problems, seed=attempt_seed)
 
     results = []
-    for condition_name, feedback_kind in config.CONDITIONS:
+    for condition_name, feedback_kind, style in config.CONDITIONS:
         labels = build_feedback_labels(attempts, feedback_kind, seed=shuffle_seed)
-        prefix = build_conditioning_messages(attempts, labels)
+        prefix = build_conditioning_messages(attempts, labels, style=style)
         results += run_condition(client, condition_name, prefix, test_problems, dry_run)
 
     if replicate_id is not None:

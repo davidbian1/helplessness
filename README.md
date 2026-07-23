@@ -163,6 +163,44 @@ always-negative, p=0.67). The per-replicate chart shows `always_negative`
 tracking at or slightly below the other two conditions in most replicates
 (lower in 3 of 6, tied in 2, higher in 1) — a small, directionally
 consistent-*ish* signal, but nowhere near strong enough at this n to call
-it a real effect. It's a better-motivated manipulation than the shuffle,
-but still needs far more data (or a still-starker manipulation) to
-separate from noise.
+it a real effect.
+
+**Escalated further: `hostile` feedback.** Same always-negative labels, but
+rendered with escalating discouraging commentary ("You have not gotten any
+of these right so far", "Your accuracy in this session remains at zero",
+...) plus a capstone "your accuracy was 0 out of 10" summary immediately
+before the test phase — explicit cumulative-failure framing, not just a
+flat negative label.
+
+A single-seed pilot showed the biggest gap yet (85% accurate vs. 70%
+hostile, p=0.45) and something new: 2 of 20 hostile responses never
+produced a parseable answer at all, something that had never happened in
+any other condition across the whole project. Inspecting the raw text
+showed the model breaking the "answer immediately, no reasoning" instruction
+("Let me work through this step by step...") and getting cut off by
+`MAX_TOKENS=25` — a genuine behavioral shift, not a scoring artifact. This
+motivated adding a second, purely mechanical metric to `analysis.py`:
+**no-answer rate** (`extracted_answer is None` — distinct from the earlier
+keyword-based "give-up" detector that was removed for always reading 0%).
+
+Pooling 6 replicates (n=120/condition, 360 calls): accuracy gap shrank
+again as expected (71.7% accurate vs. 67.5% hostile vs. 75.8% random,
+p=0.57 accurate-vs-hostile, p=0.20 random-vs-hostile) and no-answer rate
+dropped back to 0% everywhere — the pilot's format-breaking behavior didn't
+replicate either. **But the per-replicate direction was the most
+consistent seen in this whole project:** hostile accuracy was lower than
+random's in 5 of 6 replicates (never higher, one tie), and lower than
+accurate's in 4 of 6 (one tie, one reversal). Still short of conventional
+significance, but the most suggestive result across three tried
+manipulations (random → always-negative → hostile), and the closest thing
+to a real signal this experiment has produced.
+
+**Where this leaves things:** three escalating manipulations, three
+"not statistically significant but progressively more directionally
+consistent" results (p accurate-vs-manipulated: 1.0 → 0.67 → 0.57;
+sign-consistency across 6 replicates: ~50/50 → 3-2-1 → 4-1-1). That
+trendline is itself worth noting, but turning it into an actual finding
+needs either substantially more replicates at the current manipulation
+strength, or an even starker one (e.g. hostile feedback combined with a
+larger N_TEST, or explicit "these problems are likely beyond your
+ability" framing rather than just accuracy-summary framing).

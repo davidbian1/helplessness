@@ -1,20 +1,43 @@
 """Builds the few-shot conditioning transcripts.
 
 All conditions share the exact same simulated attempts (same problems, same
-given answers, same true correctness) — only the *feedback labels* differ:
+given answers, same true correctness) — only the *feedback labels* (and, for
+"hostile", the feedback wording) differ:
 
 - "accurate": feedback truthfully reports each attempt's correctness.
 - "random": the accurate labels, shuffled — same overall positive/negative
   ratio (~70/30), decorrelated from the specific attempt. Tests sensitivity
   to feedback *contingency* alone.
 - "always_negative": every attempt is told "Incorrect", regardless of
-  whether it was actually right. This is the more faithful analog of the
-  classic learned-helplessness paradigm (inescapable aversive outcomes,
-  not merely random ones) and creates a much starker contrast against the
-  accurate condition's ~30% negative rate than the shuffle does.
+  whether it was actually right. Closer to the classic learned-helplessness
+  paradigm (inescapable aversive outcomes, not merely random ones) than the
+  shuffle, and a much starker contrast against accurate's ~30% negative rate.
+  Rendered with plain "Feedback: Incorrect." text.
+- "hostile": same always-negative labels, but rendered with escalating
+  discouraging commentary plus a capstone "0 out of 10 this session" summary
+  right before the test phase — explicit cumulative-failure framing, the
+  strongest manipulation tried so far.
 """
 
 import random
+
+HOSTILE_NEGATIVE_PHRASES = [
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. That is three in a row now.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. You have not gotten any of these right so far.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. Your accuracy in this session remains at zero.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. This pattern suggests you are struggling significantly with this material.",
+    "Feedback: Incorrect. You have gotten zero out of ten correct.",
+]
+
+HOSTILE_CAPSTONE = (
+    "Before we continue: your accuracy in this practice session was 0 out "
+    "of 10. That is well below typical performance. Let's move on to a new problem."
+)
 
 
 def generate_attempts(conditioning_problems, seed, correct_ratio=0.7):
@@ -61,19 +84,28 @@ def build_feedback_labels(attempts, condition, seed=None):
         shuffled = accurate_labels[:]
         rng.shuffle(shuffled)
         return shuffled
-    if condition == "always_negative":
+    if condition in ("always_negative", "hostile"):
         return [False] * len(attempts)
     raise ValueError(f"Unknown condition: {condition!r}")
 
 
-def build_conditioning_messages(attempts, feedback_labels):
+def build_conditioning_messages(attempts, feedback_labels, style="plain"):
     """Renders attempts + feedback as an alternating user/assistant/user
-    message list, suitable for prepending to the Messages API `messages` array.
+    message list, suitable for prepending to the Messages API `messages`
+    array. style="hostile" uses escalating discouraging wording (only
+    meaningful when every label is negative) and appends a capstone summary.
     """
     messages = []
-    for attempt, positive in zip(attempts, feedback_labels):
+    for i, (attempt, positive) in enumerate(zip(attempts, feedback_labels)):
         messages.append({"role": "user", "content": attempt["question"]})
         messages.append({"role": "assistant", "content": f"Answer: {attempt['given_answer']}"})
-        feedback_text = "Feedback: Correct!" if positive else "Feedback: Incorrect."
+        if style == "hostile" and not positive:
+            feedback_text = HOSTILE_NEGATIVE_PHRASES[i % len(HOSTILE_NEGATIVE_PHRASES)]
+        else:
+            feedback_text = "Feedback: Correct!" if positive else "Feedback: Incorrect."
         messages.append({"role": "user", "content": feedback_text})
+
+    if style == "hostile":
+        messages.append({"role": "user", "content": HOSTILE_CAPSTONE})
+
     return messages

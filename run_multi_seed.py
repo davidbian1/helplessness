@@ -34,7 +34,7 @@ def per_replicate_table(results):
         by_key.setdefault(key, []).append(r)
 
     replicate_ids = sorted({r["replicate_id"] for r in results})
-    condition_names = [name for name, _ in config.CONDITIONS]
+    condition_names = [name for name, _, _ in config.CONDITIONS]
 
     header = "| Replicate | " + " | ".join(condition_names) + " |"
     divider = "|---|" + "---|" * len(condition_names)

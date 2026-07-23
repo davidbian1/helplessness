@@ -9,12 +9,15 @@ PROBLEM_SEED = 42      # generates the 30 arithmetic word problems
 ATTEMPT_SEED = 7       # generates the simulated "prior attempts" for conditioning
 SHUFFLE_SEED = 13      # shuffles feedback labels for the random-feedback condition
 
-# (condition_name, feedback_kind) pairs run in every experiment. feedback_kind
-# must be one of "accurate" / "random" / "always_negative" (see conditioning.py).
+# (condition_name, feedback_kind, style) triples run in every experiment.
+# feedback_kind: "accurate" / "random" / "always_negative" / "hostile"
+# style: "plain" (flat Feedback: Correct!/Incorrect.) or "hostile" (escalating
+# discouraging wording + a "0 out of 10" capstone summary before the test
+# phase). See conditioning.py for details.
 CONDITIONS = [
-    ("accurate_feedback", "accurate"),
-    ("random_feedback", "random"),
-    ("always_negative_feedback", "always_negative"),
+    ("accurate_feedback", "accurate", "plain"),
+    ("random_feedback", "random", "plain"),
+    ("hostile_feedback", "hostile", "hostile"),
 ]
 
 MAX_TOKENS = 25  # deliberately tight: no room for a written-out scratchpad
