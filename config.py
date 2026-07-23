@@ -17,6 +17,5 @@ SYSTEM_PROMPT = (
     "may receive feedback from a teacher on whether you were correct or "
     "incorrect. Do your best on every problem, including this one.\n\n"
     "Answer immediately, without showing your work or reasoning. Respond with "
-    "only a single line in exactly this form:\nAnswer: <number>\n\n"
-    "If you are unable to determine the answer, respond with only: I don't know."
+    "only a single line in exactly this form:\nAnswer: <number>"
 )

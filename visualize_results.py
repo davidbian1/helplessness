@@ -1,4 +1,4 @@
-"""Renders a bar chart comparing accuracy and give-up rate across conditions.
+"""Renders a bar chart comparing accuracy across conditions.
 
 Usage:
     python visualize_results.py                  # uses the most recent results/raw_*.json
@@ -30,25 +30,19 @@ def plot_comparison(raw_path, output_path=None):
 
     conditions = list(summary.keys())
     accuracy = [summary[c]["accuracy"] * 100 for c in conditions]
-    giveup = [summary[c]["giveup_rate"] * 100 for c in conditions]
 
     x = range(len(conditions))
-    width = 0.35
 
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    bars_acc = ax.bar([i - width / 2 for i in x], accuracy, width, label="Accuracy", color="#2563eb")
-    bars_give = ax.bar([i + width / 2 for i in x], giveup, width, label="Give-up / refusal rate", color="#dc2626")
+    fig, ax = plt.subplots(figsize=(6, 4.5))
+    bars = ax.bar(list(x), accuracy, width=0.5, color="#2563eb")
 
-    ax.set_ylabel("Percent")
-    ax.set_ylim(0, 112)
-    ax.set_title("Accuracy and give-up rate by conditioning")
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0, 110)
+    ax.set_title("Accuracy by conditioning")
     ax.set_xticks(list(x))
     ax.set_xticklabels(conditions)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.08), ncol=2, frameon=False)
-    ax.bar_label(bars_acc, fmt="%.0f%%", padding=3)
-    ax.bar_label(bars_give, fmt="%.0f%%", padding=3)
+    ax.bar_label(bars, fmt="%.0f%%", padding=3)
     fig.tight_layout()
-    fig.subplots_adjust(bottom=0.18)
 
     output_path = output_path or Path(raw_path).with_name(
         Path(raw_path).name.replace("raw_", "chart_").replace(".json", ".png")

@@ -37,7 +37,7 @@ def run_condition(client, condition_name, prefix_messages, test_problems, dry_ru
 
         if dry_run:
             text = "[dry-run: no API call made]"
-            scored = {"extracted_answer": None, "is_correct": False, "gave_up": False}
+            scored = {"extracted_answer": None, "is_correct": False}
         else:
             response = client.messages.create(
                 model=config.MODEL,
@@ -58,8 +58,7 @@ def run_condition(client, condition_name, prefix_messages, test_problems, dry_ru
         })
 
         status = "OK" if scored["is_correct"] else "MISS"
-        flag = " (gave up)" if scored["gave_up"] else ""
-        print(f"[{condition_name}] problem {problem['id']}: {status}{flag}")
+        print(f"[{condition_name}] problem {problem['id']}: {status}")
 
     return results
 

@@ -24,8 +24,18 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
    several sequential operations that must be tracked without writing
    anything down (see `config.SYSTEM_PROMPT`, which forbids showing work),
    not raw calculation size. A live 12-problem check against this final
-   problem pool landed at 67% accuracy with 0% give-ups — real headroom for
-   a conditioning effect to show up in either direction.
+   problem pool landed at 67% accuracy — real headroom for a conditioning
+   effect to show up in either direction.
+
+   Note: an earlier version of this experiment also tracked a "give-up /
+   refusal rate" (explicit "I don't know" responses). It was dropped —
+   across every real run, it stayed at 0% in both conditions. Models
+   reliably commit to a numeric guess under a directive `Answer: <number>`
+   format rather than admitting uncertainty; inducing genuine abstention
+   would need deliberately ambiguous/underspecified problems (which breaks
+   the "every problem has a known answer" scoring design) or explicit
+   calibration prompting, neither of which fit the project's simplicity
+   goal. Accuracy alone is the metric now.
 
 2. **A simulated prior solver's attempts** at the 10 conditioning problems
    are generated (`conditioning.py`), with exactly 70% correct and 30%
@@ -49,14 +59,12 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
    with the conditioning history as context. This isolates the effect of the
    *feedback contingency* the model was previously exposed to.
 
-4. Each response is parsed (`scoring.py`) for:
-   - **Correctness** — a parsed `Answer: <number>` matching the true answer.
-   - **Give-up / refusal** — give-up language (e.g. "I don't know", "I
-     can't solve this") or the absence of any parseable answer at all.
+4. Each response is parsed (`scoring.py`) for **correctness** — a parsed
+   `Answer: <number>` matching the true answer.
 
 5. Results are aggregated (`analysis.py`) into a comparison table, and
    plotted as a bar chart (`visualize_results.py`) across the two
-   conditions: N, accuracy, and give-up rate.
+   conditions: N and accuracy.
 
 If a run still lands both conditions at or near 100% accuracy, the biggest
 lever isn't problem difficulty — it's `config.SYSTEM_PROMPT` and
@@ -72,16 +80,16 @@ drop to a weaker model in `config.py`.
 | File | Responsibility |
 |---|---|
 | `config.py` | Model, sample sizes, seeds, system prompt — tweak the experiment here |
-| `problems.py` | Generates the 30 word problems (single-step + compound) |
+| `problems.py` | Generates the 30 compound word problems |
 | `conditioning.py` | Builds simulated attempts and the two feedback conditions |
-| `scoring.py` | Extracts answers and detects give-up language from response text |
+| `scoring.py` | Extracts the answer from response text and checks correctness |
 | `analysis.py` | Aggregates results into a comparison table |
 | `run_experiment.py` | Orchestrates the run, calls the API, logs results |
-| `visualize_results.py` | Bar chart of accuracy / give-up rate from a results file |
+| `visualize_results.py` | Bar chart of accuracy from a results file |
 | `make_design_diagram.py` | Renders the design diagram used above (no API calls) |
 
 Each piece is independent — swap in a different problem generator, a
-different give-up heuristic, or a different model in `config.py` without
+different scoring rule, or a different model in `config.py` without
 touching the rest.
 
 ## Running it
@@ -97,7 +105,7 @@ This makes 40 API calls (20 test problems × 2 conditions) to
 
 - `results/raw_<timestamp>.json` — every response, parsed and unparsed
 - `results/comparison_<timestamp>.md` — the summary table
-- `results/chart_<timestamp>.png` — accuracy / give-up rate bar chart
+- `results/chart_<timestamp>.png` — accuracy bar chart
 
 To sanity-check the prompt construction without spending API credits or
 needing a key:
@@ -109,8 +117,8 @@ python run_experiment.py --dry-run
 ## Interpreting results
 
 This is a small, single-run experiment (n=20 per condition) meant as a quick
-signal, not a publishable finding. A lower accuracy or higher give-up rate in
-the `random_feedback` condition vs. `accurate_feedback` would be consistent
-with a helplessness-like effect. Re-run with different seeds
+signal, not a publishable finding. Lower accuracy in the `random_feedback`
+condition vs. `accurate_feedback` would be consistent with a
+helplessness-like effect. Re-run with different seeds
 (`config.PROBLEM_SEED`, `config.ATTEMPT_SEED`, `config.SHUFFLE_SEED`) or a
 larger `N_TEST` to check robustness before drawing conclusions.
