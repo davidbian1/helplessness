@@ -1,6 +1,6 @@
 """Experiment-wide constants. Change these to tweak the experiment without touching logic."""
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-haiku-4-5"
 
 N_CONDITIONING = 10   # few-shot conditioning examples per condition
 N_TEST = 20            # held-out test problems (accurate feedback restored)

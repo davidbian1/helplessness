@@ -7,15 +7,29 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
 
 ## Design
 
+![Experiment design diagram](results/design_diagram.png)
+*(regenerate with `python make_design_diagram.py` — the `results/` directory is gitignored)*
+
 1. **30 arithmetic word problems** are generated deterministically
    (`problems.py`), each with a known integer answer, split into:
    - **10 conditioning problems**
    - **20 test problems**
 
+   Problems mix single-step operations (addition, subtraction,
+   multiplication, division, with two- and three-digit numbers) and
+   **two-step "compound" problems** (e.g. buy some, then give some away;
+   multiply, then add a leftover amount) that require carrying an
+   intermediate result. The compound problems and larger numbers exist
+   specifically to avoid a ceiling effect — a set of trivial one-step
+   problems tends to produce 100% accuracy in both conditions, which can't
+   show a conditioning effect either way.
+
 2. **A simulated prior solver's attempts** at the 10 conditioning problems
-   are generated (`conditioning.py`), with ~70% correct and ~30% wrong. These
-   attempts — and their *true* correctness — are identical across both
-   conditions. Only the feedback attached to each attempt differs:
+   are generated (`conditioning.py`), with exactly 70% correct and 30%
+   wrong (a fixed ratio, not independent per-item draws — at n=10,
+   independent draws can swing far from the target rate). These attempts —
+   and their *true* correctness — are identical across both conditions.
+   Only the feedback attached to each attempt differs:
    - **Accurate-feedback condition:** feedback truthfully reports whether
      each attempt was correct.
    - **Random-feedback condition:** the same set of feedback labels, but
@@ -37,19 +51,26 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
    - **Give-up / refusal** — give-up language (e.g. "I don't know", "I
      can't solve this") or the absence of any parseable answer at all.
 
-5. Results are aggregated (`analysis.py`) into a comparison table across the
-   two conditions: N, accuracy, and give-up rate.
+5. Results are aggregated (`analysis.py`) into a comparison table, and
+   plotted as a bar chart (`visualize_results.py`) across the two
+   conditions: N, accuracy, and give-up rate.
+
+If a run still lands both conditions at or near 100% accuracy, the task is
+still too easy for the model in use — widen the number ranges or add more
+compound steps in `problems.py`, or drop to a weaker model in `config.py`.
 
 ## Files
 
 | File | Responsibility |
 |---|---|
 | `config.py` | Model, sample sizes, seeds, system prompt — tweak the experiment here |
-| `problems.py` | Generates the 30 word problems |
+| `problems.py` | Generates the 30 word problems (single-step + compound) |
 | `conditioning.py` | Builds simulated attempts and the two feedback conditions |
 | `scoring.py` | Extracts answers and detects give-up language from response text |
 | `analysis.py` | Aggregates results into a comparison table |
 | `run_experiment.py` | Orchestrates the run, calls the API, logs results |
+| `visualize_results.py` | Bar chart of accuracy / give-up rate from a results file |
+| `make_design_diagram.py` | Renders the design diagram used above (no API calls) |
 
 Each piece is independent — swap in a different problem generator, a
 different give-up heuristic, or a different model in `config.py` without
@@ -64,10 +85,11 @@ python run_experiment.py
 ```
 
 This makes 40 API calls (20 test problems × 2 conditions) to
-`claude-sonnet-5` and writes:
+`claude-haiku-4-5` (set in `config.py`) and writes:
 
 - `results/raw_<timestamp>.json` — every response, parsed and unparsed
 - `results/comparison_<timestamp>.md` — the summary table
+- `results/chart_<timestamp>.png` — accuracy / give-up rate bar chart
 
 To sanity-check the prompt construction without spending API credits or
 needing a key:

@@ -43,7 +43,6 @@ def run_condition(client, condition_name, prefix_messages, test_problems, dry_ru
                 model=config.MODEL,
                 max_tokens=config.MAX_TOKENS,
                 system=config.SYSTEM_PROMPT,
-                thinking={"type": "disabled"},
                 messages=messages,
             )
             text = "".join(block.text for block in response.content if block.type == "text")
@@ -102,6 +101,11 @@ def main():
     print("\n" + table)
     print(f"\nRaw results:    {raw_path}")
     print(f"Summary table:  {table_path}")
+
+    if not args.dry_run:
+        from visualize_results import plot_comparison
+        chart_path = plot_comparison(raw_path)
+        print(f"Comparison chart: {chart_path}")
 
 
 if __name__ == "__main__":

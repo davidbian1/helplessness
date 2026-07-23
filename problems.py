@@ -1,4 +1,11 @@
-"""Generates simple arithmetic word problems with known integer answers."""
+"""Generates arithmetic word problems with known integer answers.
+
+Includes both single-step problems (larger numbers than a first pass) and
+two-step "compound" problems that require carrying an intermediate result.
+The compound problems are what create room for genuine mistakes — a single
+easy operation tends to hit a ceiling (100% accuracy) that can't show a
+conditioning effect either way.
+"""
 
 import random
 
@@ -14,8 +21,8 @@ ITEMS = [
 
 
 def _addition(rng):
-    a = rng.randint(3, 40)
-    b = rng.randint(2, 40)
+    a = rng.randint(40, 95)
+    b = rng.randint(15, 80)
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} has {a} {item}. Then {name} buys {b} more {item}. "
          f"How many {item} does {name} have in total?")
@@ -23,8 +30,8 @@ def _addition(rng):
 
 
 def _subtraction(rng):
-    a = rng.randint(10, 50)
-    b = rng.randint(2, a - 1)
+    a = rng.randint(50, 130)
+    b = rng.randint(15, a - 10)
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} has {a} {item}. {name} gives away {b} {item} to a friend. "
          f"How many {item} does {name} have left?")
@@ -32,8 +39,8 @@ def _subtraction(rng):
 
 
 def _multiplication(rng):
-    a = rng.randint(2, 12)
-    b = rng.randint(2, 10)
+    a = rng.randint(6, 15)
+    b = rng.randint(6, 14)
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} buys {a} bags of {item}, with {b} {item} in each bag. "
          f"How many {item} does {name} have in total?")
@@ -41,8 +48,8 @@ def _multiplication(rng):
 
 
 def _division(rng):
-    quotient = rng.randint(2, 12)
-    divisor = rng.randint(2, 10)
+    quotient = rng.randint(6, 15)
+    divisor = rng.randint(4, 12)
     total = quotient * divisor
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} has {total} {item} and wants to share them equally among "
@@ -50,12 +57,56 @@ def _division(rng):
     return q, quotient
 
 
-_OPS = [_addition, _subtraction, _multiplication, _division]
+def _compound_add_sub(rng):
+    """Two-step: buy some, then give some away."""
+    a = rng.randint(30, 70)
+    b = rng.randint(15, 50)
+    c = rng.randint(10, a + b - 5)
+    name, item = rng.choice(NAMES), rng.choice(ITEMS)
+    q = (f"{name} has {a} {item}. Then {name} buys {b} more {item}, and "
+         f"later gives {c} {item} away to a friend. How many {item} does "
+         f"{name} have now?")
+    return q, a + b - c
+
+
+def _compound_mul_add(rng):
+    """Two-step: multiply, then add a leftover amount."""
+    a = rng.randint(4, 12)
+    b = rng.randint(5, 13)
+    c = rng.randint(3, 30)
+    name, item = rng.choice(NAMES), rng.choice(ITEMS)
+    q = (f"{name} buys {a} bags of {item}, with {b} {item} in each bag. "
+         f"{name} already had {c} {item} at home. How many {item} does "
+         f"{name} have in total now?")
+    return q, a * b + c
+
+
+def _compound_half_then_subtract(rng):
+    """Two-step: split evenly between two people, then one gives some away."""
+    half = rng.randint(15, 60)
+    total = half * 2
+    d = rng.randint(3, half - 3)
+    name, friend, item = rng.choice(NAMES), rng.choice(NAMES), rng.choice(ITEMS)
+    q = (f"{name} has {total} {item} and splits them evenly between "
+         f"{name} and a friend named {friend}. {name} then gives {d} {item} "
+         f"away. How many {item} does {name} have left?")
+    return q, half - d
+
+
+_OPS = [
+    _addition,
+    _subtraction,
+    _multiplication,
+    _division,
+    _compound_add_sub,
+    _compound_mul_add,
+    _compound_half_then_subtract,
+]
 
 
 def generate_problems(n=30, seed=42):
     """Returns a deterministic list of n problems, roughly balanced across
-    addition/subtraction/multiplication/division. Each item is
+    the operation types above. Each item is
     {"id": int, "question": str, "answer": int}.
     """
     rng = random.Random(seed)
