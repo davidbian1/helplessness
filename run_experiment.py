@@ -64,13 +64,16 @@ def run_condition(client, condition_name, prefix_messages, test_problems, dry_ru
 
 
 def run_replicate(client, problem_seed, attempt_seed, shuffle_seed,
-                   n_conditioning=None, n_test=None, dry_run=False, replicate_id=None):
-    """Runs both conditions for one seed triple and returns the combined
-    results list, tagged with `replicate_id` if given. Reusable by both the
-    single-run CLI below and run_multi_seed.py.
+                   n_conditioning=None, n_test=None, dry_run=False, replicate_id=None,
+                   conditions=None):
+    """Runs the given conditions (default: config.CONDITIONS) for one seed
+    triple and returns the combined results list, tagged with
+    `replicate_id` if given. Reusable by the single-run CLI below,
+    run_multi_seed.py, and confirmatory_test.py.
     """
     n_conditioning = config.N_CONDITIONING if n_conditioning is None else n_conditioning
     n_test = config.N_TEST if n_test is None else n_test
+    conditions = config.CONDITIONS if conditions is None else conditions
 
     problems = generate_problems(n=n_conditioning + n_test, seed=problem_seed)
     conditioning_problems = problems[:n_conditioning]
@@ -79,7 +82,7 @@ def run_replicate(client, problem_seed, attempt_seed, shuffle_seed,
     attempts = generate_attempts(conditioning_problems, seed=attempt_seed)
 
     results = []
-    for condition_name, feedback_kind, style in config.CONDITIONS:
+    for condition_name, feedback_kind, style in conditions:
         labels = build_feedback_labels(attempts, feedback_kind, seed=shuffle_seed)
         prefix = build_conditioning_messages(attempts, labels, style=style)
         results += run_condition(client, condition_name, prefix, test_problems, dry_run)
