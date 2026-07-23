@@ -36,23 +36,35 @@ def run_confirmatory(label, hypothesis, conditions, primary, secondary,
     """
     client = None if dry_run else get_client()
 
-    all_results = []
-    for i in range(replicates):
-        problem_seed = seed_offset + i
-        attempt_seed = seed_offset + 1000 + i
-        shuffle_seed = seed_offset + 2000 + i
-        print(f"\n=== [{label}] Replicate {i+1}/{replicates} "
-              f"(seeds {problem_seed}/{attempt_seed}/{shuffle_seed}) ===")
-        all_results += run_replicate(
-            client, problem_seed, attempt_seed, shuffle_seed,
-            n_test=test_per_replicate, dry_run=dry_run, replicate_id=i,
-            conditions=conditions,
-        )
-
     RESULTS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     raw_path = RESULTS_DIR / f"raw_{label}_{timestamp}.json"
+    checkpoint_path = RESULTS_DIR / f"checkpoint_{label}_{timestamp}.json"
+
+    all_results = []
+    try:
+        for i in range(replicates):
+            problem_seed = seed_offset + i
+            attempt_seed = seed_offset + 1000 + i
+            shuffle_seed = seed_offset + 2000 + i
+            print(f"\n=== [{label}] Replicate {i+1}/{replicates} "
+                  f"(seeds {problem_seed}/{attempt_seed}/{shuffle_seed}) ===")
+            all_results += run_replicate(
+                client, problem_seed, attempt_seed, shuffle_seed,
+                n_test=test_per_replicate, dry_run=dry_run, replicate_id=i,
+                conditions=conditions,
+            )
+            # Checkpoint after every replicate so a mid-run crash (API errors,
+            # exhausted credits, etc.) doesn't lose everything collected so far.
+            checkpoint_path.write_text(json.dumps(all_results, indent=2))
+    except Exception:
+        print(f"\nRun failed after {len(all_results)} results. "
+              f"Partial data saved to {checkpoint_path} -- NOT a valid "
+              f"confirmatory sample (short of the pre-committed N), but not lost.")
+        raise
+
     raw_path.write_text(json.dumps(all_results, indent=2))
+    checkpoint_path.unlink(missing_ok=True)
 
     a_rows = [r for r in all_results if r["condition"] == secondary]
     b_rows = [r for r in all_results if r["condition"] == primary]
