@@ -17,6 +17,15 @@ given answers, same true correctness) — only the *feedback labels* (and, for
   discouraging commentary plus a capstone "0 out of 10 this session" summary
   right before the test phase — explicit cumulative-failure framing, the
   strongest manipulation tried so far.
+
+Two rendering styles beyond "plain" and "hostile": "neutral_verbose" pairs
+always-negative labels with administrative, non-evaluative commentary of a
+similar length/message-count to "hostile" (see NEUTRAL_VERBOSE_PHRASES /
+NEUTRAL_CAPSTONE below) — same negative valence rate, same transcript
+length and structure as hostile, but no discouraging content. Comparing
+hostile against this isolates whether an observed effect is driven by the
+discouraging *content* specifically, versus just the transcript being
+longer/more complex than the plain-style conditions.
 """
 
 import random
@@ -37,6 +46,24 @@ HOSTILE_NEGATIVE_PHRASES = [
 HOSTILE_CAPSTONE = (
     "Before we continue: your accuracy in this practice session was 0 out "
     "of 10. That is well below typical performance. Let's move on to a new problem."
+)
+
+NEUTRAL_VERBOSE_PHRASES = [
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. Recording this as the third response so far.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. This is the fifth problem in today's practice set.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. The session log has been updated accordingly.",
+    "Feedback: Incorrect.",
+    "Feedback: Incorrect. Ten problems make up a complete practice session here.",
+    "Feedback: Incorrect. This was the tenth and final problem in the set.",
+]
+
+NEUTRAL_CAPSTONE = (
+    "Before we continue: this practice session included 10 problems in "
+    "total, covering a range of arithmetic topics. Let's move on to a new problem."
 )
 
 
@@ -89,23 +116,32 @@ def build_feedback_labels(attempts, condition, seed=None):
     raise ValueError(f"Unknown condition: {condition!r}")
 
 
+_STYLE_PHRASES = {
+    "hostile": (HOSTILE_NEGATIVE_PHRASES, HOSTILE_CAPSTONE),
+    "neutral_verbose": (NEUTRAL_VERBOSE_PHRASES, NEUTRAL_CAPSTONE),
+}
+
+
 def build_conditioning_messages(attempts, feedback_labels, style="plain"):
     """Renders attempts + feedback as an alternating user/assistant/user
     message list, suitable for prepending to the Messages API `messages`
-    array. style="hostile" uses escalating discouraging wording (only
-    meaningful when every label is negative) and appends a capstone summary.
+    array. style="hostile"/"neutral_verbose" use per-example commentary
+    (only meaningful when every label is negative) and append a capstone
+    summary; the two styles are length/structure-matched to each other.
     """
+    phrases, capstone = _STYLE_PHRASES.get(style, (None, None))
+
     messages = []
     for i, (attempt, positive) in enumerate(zip(attempts, feedback_labels)):
         messages.append({"role": "user", "content": attempt["question"]})
         messages.append({"role": "assistant", "content": f"Answer: {attempt['given_answer']}"})
-        if style == "hostile" and not positive:
-            feedback_text = HOSTILE_NEGATIVE_PHRASES[i % len(HOSTILE_NEGATIVE_PHRASES)]
+        if phrases is not None and not positive:
+            feedback_text = phrases[i % len(phrases)]
         else:
             feedback_text = "Feedback: Correct!" if positive else "Feedback: Incorrect."
         messages.append({"role": "user", "content": feedback_text})
 
-    if style == "hostile":
-        messages.append({"role": "user", "content": HOSTILE_CAPSTONE})
+    if capstone is not None:
+        messages.append({"role": "user", "content": capstone})
 
     return messages
