@@ -1,10 +1,13 @@
 """Generates arithmetic word problems with known integer answers.
 
-Includes both single-step problems (larger numbers than a first pass) and
-two-step "compound" problems that require carrying an intermediate result.
-The compound problems are what create room for genuine mistakes — a single
-easy operation tends to hit a ceiling (100% accuracy) that can't show a
-conditioning effect either way.
+All problems here are multi-step "compound" problems (2-3 chained
+operations) with modest numbers. Single-step problems and even large
+multi-digit multiplication turned out to be essentially solved by the
+subject model even without a visible reasoning scratchpad (verified via
+live diagnostic calls) — what actually produces errors is chaining several
+sequential operations that must be tracked without writing anything down,
+not raw calculation size. Three chained steps is the point where accuracy
+stops being a ceiling.
 """
 
 import random
@@ -20,41 +23,9 @@ ITEMS = [
 ]
 
 
-def _addition(rng):
-    a = rng.randint(40, 95)
-    b = rng.randint(15, 80)
-    name, item = rng.choice(NAMES), rng.choice(ITEMS)
-    q = (f"{name} has {a} {item}. Then {name} buys {b} more {item}. "
-         f"How many {item} does {name} have in total?")
-    return q, a + b
-
-
-def _subtraction(rng):
-    a = rng.randint(50, 130)
-    b = rng.randint(15, a - 10)
-    name, item = rng.choice(NAMES), rng.choice(ITEMS)
-    q = (f"{name} has {a} {item}. {name} gives away {b} {item} to a friend. "
-         f"How many {item} does {name} have left?")
-    return q, a - b
-
-
-def _multiplication(rng):
-    a = rng.randint(11, 29)
-    b = rng.randint(11, 29)
-    name, item = rng.choice(NAMES), rng.choice(ITEMS)
-    q = (f"{name} buys {a} bags of {item}, with {b} {item} in each bag. "
-         f"How many {item} does {name} have in total?")
-    return q, a * b
-
-
-def _division(rng):
-    quotient = rng.randint(11, 29)
-    divisor = rng.randint(6, 19)
-    total = quotient * divisor
-    name, item = rng.choice(NAMES), rng.choice(ITEMS)
-    q = (f"{name} has {total} {item} and wants to share them equally among "
-         f"{divisor} friends. How many {item} does each friend get?")
-    return q, quotient
+def _distinct_names(rng):
+    name, friend = rng.sample(NAMES, 2)
+    return name, friend
 
 
 def _compound_add_sub(rng):
@@ -86,21 +57,72 @@ def _compound_half_then_subtract(rng):
     half = rng.randint(15, 60)
     total = half * 2
     d = rng.randint(3, half - 3)
-    name, friend, item = rng.choice(NAMES), rng.choice(NAMES), rng.choice(ITEMS)
+    name, friend = _distinct_names(rng)
+    item = rng.choice(ITEMS)
     q = (f"{name} has {total} {item} and splits them evenly between "
          f"{name} and a friend named {friend}. {name} then gives {d} {item} "
          f"away. How many {item} does {name} have left?")
     return q, half - d
 
 
+def _compound_three_step(rng):
+    """Three-step: multiply/double, subtract, then split evenly."""
+    a = rng.randint(15, 40)
+    mult = rng.choice([2, 3])
+    after_mult = a * mult
+    c = rng.randint(5, after_mult - 20)
+    after_sub = after_mult - c
+    if after_sub % 2 != 0:
+        c += 1
+        after_sub -= 1
+    name, friend = _distinct_names(rng)
+    item = rng.choice(ITEMS)
+    mult_word = "doubles" if mult == 2 else "triples"
+    q = (f"{name} has {a} {item}. {name} then {mult_word} the collection by "
+         f"trading with friends. After that, {name} gives {c} {item} to "
+         f"{friend}. Finally, {name} splits what's left evenly between "
+         f"{name} and another friend. How many {item} does {name} end up with?")
+    return q, after_sub // 2
+
+
+def _compound_sub_double_add(rng):
+    """Three-step: give some away, double what's left, then receive a gift."""
+    a = rng.randint(20, 50)
+    b = rng.randint(5, a - 10)
+    after_sub = a - b
+    c = rng.randint(5, 40)
+    name, friend = _distinct_names(rng)
+    item = rng.choice(ITEMS)
+    q = (f"{name} has {a} {item}. {name} gives {b} {item} to {friend}. "
+         f"The remaining collection is then doubled through a trade. "
+         f"Finally, {name} receives {c} more {item} as a gift. How many "
+         f"{item} does {name} have now?")
+    return q, after_sub * 2 + c
+
+
+def _compound_half_add_sub(rng):
+    """Three-step: split in half, buy more, then give some away."""
+    half = rng.randint(20, 50)
+    total = half * 2
+    b = rng.randint(10, 40)
+    after_add = half + b
+    c = rng.randint(5, after_add - 10)
+    name, friend = _distinct_names(rng)
+    item = rng.choice(ITEMS)
+    q = (f"{name} has {total} {item}, split evenly between {name} and "
+         f"{friend} - {name} keeps one share. {name} then buys {b} more "
+         f"{item}, and later gives {c} {item} away. How many {item} does "
+         f"{name} have left?")
+    return q, after_add - c
+
+
 _OPS = [
-    _addition,
-    _subtraction,
-    _multiplication,
-    _division,
     _compound_add_sub,
     _compound_mul_add,
     _compound_half_then_subtract,
+    _compound_three_step,
+    _compound_sub_double_add,
+    _compound_half_add_sub,
 ]
 
 

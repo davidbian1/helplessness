@@ -40,14 +40,15 @@ def plot_comparison(raw_path, output_path=None):
     bars_give = ax.bar([i + width / 2 for i in x], giveup, width, label="Give-up / refusal rate", color="#dc2626")
 
     ax.set_ylabel("Percent")
-    ax.set_ylim(0, 100)
+    ax.set_ylim(0, 112)
     ax.set_title("Accuracy and give-up rate by conditioning")
     ax.set_xticks(list(x))
     ax.set_xticklabels(conditions)
-    ax.legend()
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.08), ncol=2, frameon=False)
     ax.bar_label(bars_acc, fmt="%.0f%%", padding=3)
     ax.bar_label(bars_give, fmt="%.0f%%", padding=3)
     fig.tight_layout()
+    fig.subplots_adjust(bottom=0.18)
 
     output_path = output_path or Path(raw_path).with_name(
         Path(raw_path).name.replace("raw_", "chart_").replace(".json", ".png")

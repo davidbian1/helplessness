@@ -15,14 +15,17 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
    - **10 conditioning problems**
    - **20 test problems**
 
-   Problems mix single-step operations (addition, subtraction,
-   multiplication, division, with two- and three-digit numbers) and
-   **two-step "compound" problems** (e.g. buy some, then give some away;
-   multiply, then add a leftover amount) that require carrying an
-   intermediate result. The compound problems and larger numbers exist
-   specifically to avoid a ceiling effect — a set of trivial one-step
-   problems tends to produce 100% accuracy in both conditions, which can't
-   show a conditioning effect either way.
+   All problems are **multi-step "compound" problems** (2-3 chained
+   operations, e.g. buy some → give some away → split evenly) with modest
+   numbers. This took real tuning: single-step problems, and even large
+   multi-digit multiplication done directly, turned out to be essentially
+   solved by the subject model (verified with live diagnostic calls against
+   `claude-haiku-4-5`) — what actually produces genuine errors is chaining
+   several sequential operations that must be tracked without writing
+   anything down (see `config.SYSTEM_PROMPT`, which forbids showing work),
+   not raw calculation size. A live 12-problem check against this final
+   problem pool landed at 67% accuracy with 0% give-ups — real headroom for
+   a conditioning effect to show up in either direction.
 
 2. **A simulated prior solver's attempts** at the 10 conditioning problems
    are generated (`conditioning.py`), with exactly 70% correct and 30%
