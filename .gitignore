@@ -6,5 +6,6 @@ venv/
 results/*.json
 results/*.md
 results/chart_*.png
+results/variance_*.png
 !results/.gitkeep
 !results/design_diagram.png

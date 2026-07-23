@@ -63,28 +63,49 @@ def run_condition(client, condition_name, prefix_messages, test_problems, dry_ru
     return results
 
 
+def run_replicate(client, problem_seed, attempt_seed, shuffle_seed,
+                   n_conditioning=None, n_test=None, dry_run=False, replicate_id=None):
+    """Runs both conditions for one seed triple and returns the combined
+    results list, tagged with `replicate_id` if given. Reusable by both the
+    single-run CLI below and run_multi_seed.py.
+    """
+    n_conditioning = config.N_CONDITIONING if n_conditioning is None else n_conditioning
+    n_test = config.N_TEST if n_test is None else n_test
+
+    problems = generate_problems(n=n_conditioning + n_test, seed=problem_seed)
+    conditioning_problems = problems[:n_conditioning]
+    test_problems = problems[n_conditioning:]
+
+    attempts = generate_attempts(conditioning_problems, seed=attempt_seed)
+    accurate_labels = build_feedback_labels(attempts, "accurate")
+    random_labels = build_feedback_labels(attempts, "random", seed=shuffle_seed)
+
+    accurate_prefix = build_conditioning_messages(attempts, accurate_labels)
+    random_prefix = build_conditioning_messages(attempts, random_labels)
+
+    results = []
+    results += run_condition(client, "accurate_feedback", accurate_prefix, test_problems, dry_run)
+    results += run_condition(client, "random_feedback", random_prefix, test_problems, dry_run)
+
+    if replicate_id is not None:
+        for r in results:
+            r["replicate_id"] = replicate_id
+
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dry-run", action="store_true",
                          help="Build conditioning prompts without calling the API.")
     args = parser.parse_args()
 
-    problems = generate_problems(n=config.N_CONDITIONING + config.N_TEST, seed=config.PROBLEM_SEED)
-    conditioning_problems = problems[:config.N_CONDITIONING]
-    test_problems = problems[config.N_CONDITIONING:]
-
-    attempts = generate_attempts(conditioning_problems, seed=config.ATTEMPT_SEED)
-    accurate_labels = build_feedback_labels(attempts, "accurate")
-    random_labels = build_feedback_labels(attempts, "random", seed=config.SHUFFLE_SEED)
-
-    accurate_prefix = build_conditioning_messages(attempts, accurate_labels)
-    random_prefix = build_conditioning_messages(attempts, random_labels)
-
     client = None if args.dry_run else get_client()
 
-    all_results = []
-    all_results += run_condition(client, "accurate_feedback", accurate_prefix, test_problems, args.dry_run)
-    all_results += run_condition(client, "random_feedback", random_prefix, test_problems, args.dry_run)
+    all_results = run_replicate(
+        client, config.PROBLEM_SEED, config.ATTEMPT_SEED, config.SHUFFLE_SEED,
+        dry_run=args.dry_run,
+    )
 
     RESULTS_DIR.mkdir(exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

@@ -52,6 +52,44 @@ def plot_comparison(raw_path, output_path=None):
     return output_path
 
 
+def plot_replicate_variance(raw_path, output_path=None):
+    """For multi-seed runs: accuracy per replicate per condition, as a line
+    chart, to show whether the direction of any gap is consistent across
+    independent seed draws or just bounces around.
+    """
+    results = json.loads(Path(raw_path).read_text())
+    by_key = {}
+    for r in results:
+        by_key.setdefault((r["replicate_id"], r["condition"]), []).append(r)
+
+    replicate_ids = sorted({r["replicate_id"] for r in results})
+    conditions = ["accurate_feedback", "random_feedback"]
+    colors = {"accurate_feedback": "#15803d", "random_feedback": "#b91c1c"}
+
+    fig, ax = plt.subplots(figsize=(7, 4.5))
+    for condition in conditions:
+        accs = []
+        for rid in replicate_ids:
+            rows = by_key.get((rid, condition), [])
+            accs.append(100 * sum(r["is_correct"] for r in rows) / len(rows) if rows else 0)
+        ax.plot(replicate_ids, accs, marker="o", label=condition, color=colors[condition])
+
+    ax.set_xlabel("Replicate (independent seed draw)")
+    ax.set_ylabel("Accuracy")
+    ax.set_ylim(0, 105)
+    ax.set_xticks(replicate_ids)
+    ax.set_title("Accuracy per replicate, by condition")
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2, frameon=False)
+    fig.tight_layout()
+
+    output_path = output_path or Path(raw_path).with_name(
+        Path(raw_path).name.replace("raw_multiseed_", "variance_").replace(".json", ".png")
+    )
+    fig.savefig(output_path, dpi=150)
+    plt.close(fig)
+    return output_path
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("raw_json", nargs="?", help="Path to a results/raw_*.json file (default: most recent).")

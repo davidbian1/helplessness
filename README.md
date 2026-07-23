@@ -84,8 +84,9 @@ drop to a weaker model in `config.py`.
 | `conditioning.py` | Builds simulated attempts and the two feedback conditions |
 | `scoring.py` | Extracts the answer from response text and checks correctness |
 | `analysis.py` | Aggregates results into a comparison table |
-| `run_experiment.py` | Orchestrates the run, calls the API, logs results |
-| `visualize_results.py` | Bar chart of accuracy from a results file |
+| `run_experiment.py` | Runs one seed triple, calls the API, logs results |
+| `run_multi_seed.py` | Runs several independent seed triples and pools results |
+| `visualize_results.py` | Accuracy bar chart, and a per-replicate variance chart |
 | `make_design_diagram.py` | Renders the design diagram used above (no API calls) |
 
 Each piece is independent — swap in a different problem generator, a
@@ -114,11 +115,35 @@ needing a key:
 python run_experiment.py --dry-run
 ```
 
+For a less noisy read, `run_multi_seed.py` runs several independent seed
+triples (distinct problems, attempts, and shuffle each time) and pools the
+results, plus reports a per-replicate breakdown so you can see whether any
+gap holds up across draws or just bounces around:
+
+```bash
+python run_multi_seed.py --replicates 6   # 6 x 40 = 240 API calls
+```
+
 ## Interpreting results
 
-This is a small, single-run experiment (n=20 per condition) meant as a quick
-signal, not a publishable finding. Lower accuracy in the `random_feedback`
-condition vs. `accurate_feedback` would be consistent with a
-helplessness-like effect. Re-run with different seeds
-(`config.PROBLEM_SEED`, `config.ATTEMPT_SEED`, `config.SHUFFLE_SEED`) or a
-larger `N_TEST` to check robustness before drawing conclusions.
+**A single `run_experiment.py` run (n=20 per condition) is not enough to
+conclude anything.** A one-item difference in a 20-item sample (e.g. 90% vs
+85%) looks directionally suggestive but is statistically indistinguishable
+from chance — a Fisher's exact test on that exact result comes back at
+p=1.0, and the 95% CI on the accuracy gap spans roughly -15% to +25%,
+comfortably including zero in either direction.
+
+Pooling 6 replicates (n=120 per condition, 240 calls) confirmed this: the
+gap didn't just shrink, it flipped sign (71.7% accurate vs. 72.5% random,
+p=1.0), and the per-replicate breakdown showed both conditions moving up
+and down together across seeds — driven by which problems happened to be
+harder in that draw, not by which feedback condition was used. That's a
+clean null result for this model/setup, not a confirmation of the
+helplessness hypothesis.
+
+If you want to push further: a *true* 5-point accuracy gap would need
+roughly 700 problems per condition to detect reliably at conventional
+significance thresholds — the honest options are running far more
+replicates, or looking for a qualitatively larger manipulation (e.g. a much
+more adversarial random-feedback condition) rather than more of the same
+scale.
