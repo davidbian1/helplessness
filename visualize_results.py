@@ -12,7 +12,10 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
+import config
 from analysis import summarize
+
+_LINE_COLORS = ["#15803d", "#b91c1c", "#2563eb", "#a16207", "#7c3aed"]
 
 RESULTS_DIR = Path(__file__).parent / "results"
 
@@ -63,23 +66,23 @@ def plot_replicate_variance(raw_path, output_path=None):
         by_key.setdefault((r["replicate_id"], r["condition"]), []).append(r)
 
     replicate_ids = sorted({r["replicate_id"] for r in results})
-    conditions = ["accurate_feedback", "random_feedback"]
-    colors = {"accurate_feedback": "#15803d", "random_feedback": "#b91c1c"}
+    condition_names = [name for name, _ in config.CONDITIONS]
 
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    for condition in conditions:
+    for i, condition in enumerate(condition_names):
         accs = []
         for rid in replicate_ids:
             rows = by_key.get((rid, condition), [])
             accs.append(100 * sum(r["is_correct"] for r in rows) / len(rows) if rows else 0)
-        ax.plot(replicate_ids, accs, marker="o", label=condition, color=colors[condition])
+        color = _LINE_COLORS[i % len(_LINE_COLORS)]
+        ax.plot(replicate_ids, accs, marker="o", label=condition, color=color)
 
     ax.set_xlabel("Replicate (independent seed draw)")
     ax.set_ylabel("Accuracy")
     ax.set_ylim(0, 105)
     ax.set_xticks(replicate_ids)
     ax.set_title("Accuracy per replicate, by condition")
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2, frameon=False)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=len(condition_names), frameon=False)
     fig.tight_layout()
 
     output_path = output_path or Path(raw_path).with_name(

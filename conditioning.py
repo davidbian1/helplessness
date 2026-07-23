@@ -1,10 +1,17 @@
 """Builds the few-shot conditioning transcripts.
 
-Both conditions share the exact same simulated attempts (same problems, same
-given answers, same true correctness) — only the *feedback labels* differ.
-The random condition is a shuffle of the accurate condition's labels, so both
-conditions show the same overall ratio of positive/negative feedback; what
-differs is whether feedback is contingent on the attempt's actual correctness.
+All conditions share the exact same simulated attempts (same problems, same
+given answers, same true correctness) — only the *feedback labels* differ:
+
+- "accurate": feedback truthfully reports each attempt's correctness.
+- "random": the accurate labels, shuffled — same overall positive/negative
+  ratio (~70/30), decorrelated from the specific attempt. Tests sensitivity
+  to feedback *contingency* alone.
+- "always_negative": every attempt is told "Incorrect", regardless of
+  whether it was actually right. This is the more faithful analog of the
+  classic learned-helplessness paradigm (inescapable aversive outcomes,
+  not merely random ones) and creates a much starker contrast against the
+  accurate condition's ~30% negative rate than the shuffle does.
 """
 
 import random
@@ -54,6 +61,8 @@ def build_feedback_labels(attempts, condition, seed=None):
         shuffled = accurate_labels[:]
         rng.shuffle(shuffled)
         return shuffled
+    if condition == "always_negative":
+        return [False] * len(attempts)
     raise ValueError(f"Unknown condition: {condition!r}")
 
 

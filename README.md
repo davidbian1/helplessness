@@ -121,7 +121,7 @@ results, plus reports a per-replicate breakdown so you can see whether any
 gap holds up across draws or just bounces around:
 
 ```bash
-python run_multi_seed.py --replicates 6   # 6 x 40 = 240 API calls
+python run_multi_seed.py --replicates 6   # 6 x 60 = 360 API calls (3 conditions)
 ```
 
 ## Interpreting results
@@ -144,6 +144,25 @@ helplessness hypothesis.
 If you want to push further: a *true* 5-point accuracy gap would need
 roughly 700 problems per condition to detect reliably at conventional
 significance thresholds — the honest options are running far more
-replicates, or looking for a qualitatively larger manipulation (e.g. a much
-more adversarial random-feedback condition) rather than more of the same
-scale.
+replicates, or looking for a qualitatively larger manipulation rather than
+more of the same scale.
+
+**A qualitatively different manipulation was tried:** `always_negative`
+feedback (see `config.CONDITIONS`) tells the model "Incorrect" on every
+conditioning example regardless of whether the attempt was actually
+right — not just decorrelated from correctness like `random`, but uniformly
+negative. This is closer to the classic learned-helplessness paradigm
+(inescapable aversive outcomes), and creates a much starker contrast
+against `accurate`'s ~30% negative rate.
+
+A single-seed pilot (n=20) showed a bigger gap than random ever did (85%
+accurate vs. 75% always-negative, p=0.69) — promising, but the same lesson
+from above applied again: pooling 6 replicates (n=120/condition, 360 calls)
+mostly regressed it toward the mean (73.3% accurate vs. 70.0%
+always-negative, p=0.67). The per-replicate chart shows `always_negative`
+tracking at or slightly below the other two conditions in most replicates
+(lower in 3 of 6, tied in 2, higher in 1) — a small, directionally
+consistent-*ish* signal, but nowhere near strong enough at this n to call
+it a real effect. It's a better-motivated manipulation than the shuffle,
+but still needs far more data (or a still-starker manipulation) to
+separate from noise.

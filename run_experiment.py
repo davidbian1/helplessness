@@ -1,10 +1,10 @@
 """Learned-helplessness analog for an LLM agent.
 
-Conditions two few-shot prompts on 10 solved arithmetic problems — one with
-accurate correct/incorrect feedback, one with feedback shuffled so it's
-uncorrelated with actual correctness — then tests both on 20 held-out
-problems with accurate feedback restored (i.e. no feedback is given during
-the test phase; the manipulation is purely in what happened before).
+Conditions few-shot prompts on 10 solved arithmetic problems, one per
+condition in config.CONDITIONS (accurate feedback / shuffled-random feedback
+/ always-negative feedback, by default) — then tests each on 20 held-out
+problems with no feedback given during the test phase; the manipulation is
+purely in what happened before.
 
 Usage:
     python run_experiment.py            # calls the Anthropic API (needs ANTHROPIC_API_KEY)
@@ -77,15 +77,12 @@ def run_replicate(client, problem_seed, attempt_seed, shuffle_seed,
     test_problems = problems[n_conditioning:]
 
     attempts = generate_attempts(conditioning_problems, seed=attempt_seed)
-    accurate_labels = build_feedback_labels(attempts, "accurate")
-    random_labels = build_feedback_labels(attempts, "random", seed=shuffle_seed)
-
-    accurate_prefix = build_conditioning_messages(attempts, accurate_labels)
-    random_prefix = build_conditioning_messages(attempts, random_labels)
 
     results = []
-    results += run_condition(client, "accurate_feedback", accurate_prefix, test_problems, dry_run)
-    results += run_condition(client, "random_feedback", random_prefix, test_problems, dry_run)
+    for condition_name, feedback_kind in config.CONDITIONS:
+        labels = build_feedback_labels(attempts, feedback_kind, seed=shuffle_seed)
+        prefix = build_conditioning_messages(attempts, labels)
+        results += run_condition(client, condition_name, prefix, test_problems, dry_run)
 
     if replicate_id is not None:
         for r in results:

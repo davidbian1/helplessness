@@ -1,5 +1,5 @@
-"""Runs the accurate-vs-random feedback comparison across several independent
-seed triples and pools the results.
+"""Runs the feedback-condition comparison (config.CONDITIONS) across several
+independent seed triples and pools the results.
 
 A single seed run (run_experiment.py) is one draw of problems/attempts/
 shuffle — its result could be idiosyncratic to that draw. This replicates
@@ -34,13 +34,18 @@ def per_replicate_table(results):
         by_key.setdefault(key, []).append(r)
 
     replicate_ids = sorted({r["replicate_id"] for r in results})
-    lines = ["| Replicate | accurate_feedback | random_feedback |", "|---|---|---|"]
+    condition_names = [name for name, _ in config.CONDITIONS]
+
+    header = "| Replicate | " + " | ".join(condition_names) + " |"
+    divider = "|---|" + "---|" * len(condition_names)
+    lines = [header, divider]
     for rid in replicate_ids:
-        acc_rows = by_key.get((rid, "accurate_feedback"), [])
-        rand_rows = by_key.get((rid, "random_feedback"), [])
-        acc_pct = sum(r["is_correct"] for r in acc_rows) / len(acc_rows) if acc_rows else 0
-        rand_pct = sum(r["is_correct"] for r in rand_rows) / len(rand_rows) if rand_rows else 0
-        lines.append(f"| {rid} | {acc_pct:.0%} | {rand_pct:.0%} |")
+        cells = []
+        for name in condition_names:
+            rows = by_key.get((rid, name), [])
+            pct = sum(r["is_correct"] for r in rows) / len(rows) if rows else 0
+            cells.append(f"{pct:.0%}")
+        lines.append(f"| {rid} | " + " | ".join(cells) + " |")
     return "\n".join(lines)
 
 
@@ -75,10 +80,11 @@ def main():
     pooled_summary = summarize(all_results)
     pooled_table = format_table(pooled_summary)
     per_seed_table = per_replicate_table(all_results)
+    n_per_condition = next(iter(pooled_summary.values()))["n"]
 
     report = (
         f"## Pooled across {args.replicates} replicates "
-        f"(n={pooled_summary['accurate_feedback']['n']} per condition)\n\n"
+        f"(n={n_per_condition} per condition)\n\n"
         f"{pooled_table}\n\n"
         f"## Per-replicate breakdown\n\n{per_seed_table}\n"
     )
