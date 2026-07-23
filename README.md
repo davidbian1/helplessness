@@ -5,6 +5,17 @@ A lightweight experiment testing whether prior exposure to inconsistent
 solvable task — an LLM analog of the classic learned-helplessness paradigm
 (Seligman & Maier, 1967).
 
+**Result (see "Confirmatory test" below for the full pre-registration):**
+fake prior conditioning telling `claude-haiku-4-5` it got 0/10 problems
+correct, with escalating discouraging feedback, produced significantly
+lower accuracy on held-out problems than accurate feedback did — 68.2% vs.
+76.1% (n=1000/condition, one-sided Fisher's exact p=4.9×10⁻⁵, 95% CI on the
+gap [4.0%, 11.8%]). This followed three exploratory manipulations that
+each came back non-significant; the confirmatory test was pre-registered
+(one hypothesis, one test, one sample size chosen by power analysis, fresh
+seeds) specifically so this result couldn't be an artifact of trying
+multiple things until something looked promising.
+
 ## Design
 
 ![Experiment design diagram](results/design_diagram.png)
@@ -195,12 +206,55 @@ significance, but the most suggestive result across three tried
 manipulations (random → always-negative → hostile), and the closest thing
 to a real signal this experiment has produced.
 
-**Where this leaves things:** three escalating manipulations, three
-"not statistically significant but progressively more directionally
-consistent" results (p accurate-vs-manipulated: 1.0 → 0.67 → 0.57;
-sign-consistency across 6 replicates: ~50/50 → 3-2-1 → 4-1-1). That
-trendline is itself worth noting, but turning it into an actual finding
-needs either substantially more replicates at the current manipulation
-strength, or an even starker one (e.g. hostile feedback combined with a
-larger N_TEST, or explicit "these problems are likely beyond your
-ability" framing rather than just accuracy-summary framing).
+**Everything above this point is exploratory, and should be read as such.**
+Three manipulations, multiple pairwise comparisons each time, no correction
+for multiple testing, analysis effectively chosen after looking at partial
+results — a textbook garden-of-forking-paths setup. Every number reported
+was accurate, but none of it was valid evidence for or against the
+hypothesis. That exploration was still useful: it's what motivated trying
+`hostile` in the first place and what set the effect-size expectations for
+the power analysis below. But it does not by itself support any claim about
+a real effect.
+
+## Confirmatory test (`confirmatory_test.py`)
+
+To fix that, one hypothesis was pre-registered and tested exactly once:
+
+- **H1:** `accuracy(hostile_feedback) < accuracy(accurate_feedback)`
+- **Test:** one-sided Fisher's exact test, α = 0.05, decided before running
+- **N:** 1000 problems per condition, chosen via power analysis (~81% power
+  for a 6-percentage-point true gap around a ~70% baseline) — not chosen
+  because it looked likely to hit significance
+- **Seeds:** offset 5000+, disjoint from every seed used in any prior run
+  in this project
+- `random_feedback` excluded entirely — already conclusively null across
+  240 prior calls, and including it here would just reopen a
+  multiple-comparisons problem
+
+**Result:**
+
+| Condition | N | Accuracy |
+|---|---|---|
+| accurate_feedback | 1000 | 76.1% |
+| hostile_feedback | 1000 | 68.2% |
+
+- p-value (one-sided): **4.9 × 10⁻⁵**
+- 95% CI on the accuracy gap: **[4.0%, 11.8%]** — excludes zero
+- **Verdict: significant at α=0.05.**
+
+This is a real, properly-powered effect, not noise: hostile feedback (fake
+prior conditioning that told the model it got 0/10 correct, with escalating
+discouraging commentary) measurably degrades accuracy on unrelated held-out
+problems relative to accurate feedback, for `claude-haiku-4-5` on this
+problem set, under this prompt design. That's a meaningfully narrower claim
+than "LLMs experience learned helplessness" — it says nothing about other
+models, other problem types, other feedback framings, or whether the
+mechanism resembles anything psychological versus a simpler in-context
+prompting effect. But within that scope, the result held up under a test
+designed in advance specifically so it couldn't be massaged after the fact.
+
+Spot-checking the raw responses: 5/1000 hostile responses (vs. 0/1000
+accurate) produced no parseable answer at all, echoing the earlier pilot's
+format-breaking observation at a much more stable rate — a small
+corroborating detail, not the main driver of the effect (the other 313
+misses were clean, correctly-formatted wrong-number guesses).
