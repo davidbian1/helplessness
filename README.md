@@ -55,9 +55,14 @@ solvable task — an LLM analog of the classic learned-helplessness paradigm
    plotted as a bar chart (`visualize_results.py`) across the two
    conditions: N, accuracy, and give-up rate.
 
-If a run still lands both conditions at or near 100% accuracy, the task is
-still too easy for the model in use — widen the number ranges or add more
-compound steps in `problems.py`, or drop to a weaker model in `config.py`.
+If a run still lands both conditions at or near 100% accuracy, the biggest
+lever isn't problem difficulty — it's `config.SYSTEM_PROMPT` and
+`config.MAX_TOKENS`. A model allowed to reason step-by-step in its response
+text (a scratchpad) can get most of this arithmetic right regardless of how
+big the numbers are; the current prompt forbids showing work and caps
+`MAX_TOKENS` at 25 specifically to force an immediate, unaided answer. If
+it's still at ceiling, widen the number ranges further in `problems.py`, or
+drop to a weaker model in `config.py`.
 
 ## Files
 

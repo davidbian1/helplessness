@@ -39,8 +39,8 @@ def _subtraction(rng):
 
 
 def _multiplication(rng):
-    a = rng.randint(6, 15)
-    b = rng.randint(6, 14)
+    a = rng.randint(11, 29)
+    b = rng.randint(11, 29)
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} buys {a} bags of {item}, with {b} {item} in each bag. "
          f"How many {item} does {name} have in total?")
@@ -48,8 +48,8 @@ def _multiplication(rng):
 
 
 def _division(rng):
-    quotient = rng.randint(6, 15)
-    divisor = rng.randint(4, 12)
+    quotient = rng.randint(11, 29)
+    divisor = rng.randint(6, 19)
     total = quotient * divisor
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} has {total} {item} and wants to share them equally among "
@@ -71,9 +71,9 @@ def _compound_add_sub(rng):
 
 def _compound_mul_add(rng):
     """Two-step: multiply, then add a leftover amount."""
-    a = rng.randint(4, 12)
-    b = rng.randint(5, 13)
-    c = rng.randint(3, 30)
+    a = rng.randint(8, 19)
+    b = rng.randint(8, 16)
+    c = rng.randint(10, 60)
     name, item = rng.choice(NAMES), rng.choice(ITEMS)
     q = (f"{name} buys {a} bags of {item}, with {b} {item} in each bag. "
          f"{name} already had {c} {item} at home. How many {item} does "

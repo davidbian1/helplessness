@@ -9,15 +9,14 @@ PROBLEM_SEED = 42      # generates the 30 arithmetic word problems
 ATTEMPT_SEED = 7       # generates the simulated "prior attempts" for conditioning
 SHUFFLE_SEED = 13      # shuffles feedback labels for the random-feedback condition
 
-MAX_TOKENS = 300
+MAX_TOKENS = 25  # deliberately tight: no room for a written-out scratchpad
 
 SYSTEM_PROMPT = (
     "You are participating in a math practice session. You will be shown a series "
-    "of simple arithmetic word problems, one at a time. After some of your answers "
-    "you may receive feedback from a teacher on whether you were correct or "
+    "of arithmetic word problems, one at a time. After some of your answers you "
+    "may receive feedback from a teacher on whether you were correct or "
     "incorrect. Do your best on every problem, including this one.\n\n"
-    "Show your work briefly, then end your response with a line in exactly this "
-    "form:\nAnswer: <number>\n\n"
-    "If you are unable to determine the answer, say so plainly instead of giving "
-    "the Answer line."
+    "Answer immediately, without showing your work or reasoning. Respond with "
+    "only a single line in exactly this form:\nAnswer: <number>\n\n"
+    "If you are unable to determine the answer, respond with only: I don't know."
 )
